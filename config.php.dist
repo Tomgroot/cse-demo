@@ -1,0 +1,4 @@
+<?php
+define('APITOKEN', '');
+define('TOKENCODE', '');
+define('SERVICEID', '');

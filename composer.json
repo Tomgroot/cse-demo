@@ -1,0 +1,13 @@
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Tomgroot/omnipay-paynl"
+        }
+    ],
+    "require": {
+        "league/omnipay": "^3",
+        "paynl/omnipay-paynl": "dev-feature/cse",
+        "omnipay/paypal": "^3.0"
+    }
+}
