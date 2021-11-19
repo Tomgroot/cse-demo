@@ -1,36 +1,3 @@
-<?php
-
-# require autoloader
-require_once('vendor/autoload.php');
-require_once('config.php');
-
-use Omnipay\Omnipay;
-
-//If form is submitted we authorize the payment via CSE
-if (isset($_GET['submit']) && isset($_POST['name'])) {
-
-    $gateway = Omnipay::create('Paynl');
-
-    $gateway->setApiToken(APITOKEN);
-    $gateway->setTokenCode(TOKENCODE);
-    $gateway->setServiceId(SERVICEID);
-
-    $data = ['amount' => 1, 'clientIp' => '84.247.45.3', 'returnUrl' => 'localhost'];
-
-    $authorize = $gateway->authorize($data);
-    $card = new \Omnipay\Common\CreditCard([
-        'name' => $_POST['name'],
-        'cvv' => $_POST['cvv'],
-        'expiryYear' => $_POST['expiryYear'],
-        'expiryMonth' => $_POST['expiryMonth'],
-        'number' => $_POST['number']
-    ]);
-
-    $authorize->setCse($card);
-    $authorize->setTestMode(true);
-    $authorizeResponse = $authorize->send();
-}
-?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -43,7 +10,7 @@ if (isset($_GET['submit']) && isset($_POST['name'])) {
 <div class="container pt-5">
 
     <h1>CSE Demo</h1>
-    <form action="?submit" method="post">
+    <form action="?submit" method="post" id="cseform">
     <div class="row">
         <div class="col-sm-12">
             <div class="form-group">
@@ -97,6 +64,16 @@ if (isset($_GET['submit']) && isset($_POST['name'])) {
                 <option>2025</option>
             </select>
         </div>
+        <?php
+        //Not very clean, but acts as an example. Hidden input field can for example be replaced by httpd request in the js file
+        $json = file_get_contents('https://payment.pay.nl/v1/Payment/getEncryptionKeys/json');
+        $keys = json_decode($json);
+        $key = json_encode([
+            "identifier" => $keys->keys[0]['identifier'],
+            "public_key" => $keys->keys[0]['public_key']
+        ])
+        ?>
+        <input type="hidden" value="<?= $key; ?>" name="keys">
         <div class="col-sm-4">
             <div class="form-group">
                 <label for="cvv">CVV/CVC</label>
@@ -106,21 +83,9 @@ if (isset($_GET['submit']) && isset($_POST['name'])) {
     </div>
         <input class="btn btn-primary mt-3" type="submit">
     </form>
-
-    <?php if (isset($_GET['submit']) && isset($_POST['name'])) { ?>
-        <div class="mt-3 alert alert-<?= $authorizeResponse->isSuccessful() ? 'success' : 'danger'; ?>" role="alert">
-            <?= $authorizeResponse->getMessage(); ?>
-        </div>
-        <div class="mt-3">
-            <label class="form-label">Response:</label>
-            <textarea class="form-control" style="width: 600px; height: 300px;">
-            <?php var_dump($authorizeResponse->getData()); ?>
-            </textarea>
-        </div>
-    <?php } ?>
-
 </div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-
+<script src="main.js"></script>
 </body>
 </html>
