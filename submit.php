@@ -8,8 +8,8 @@ use Omnipay\Omnipay;
 //If form is submitted we authorize the payment via CSE
 if (!isset($_POST['cse']))
     exit;
-//CSE only contains the encrypted CSE data
-$cse = json_decode($_POST['cse']);
+//CSE only contains the encrypted CSE data, associative must be true as setCSE needs an array
+$cse = json_decode($_POST['cse'], true);
 if (!$cse)
     exit;
 

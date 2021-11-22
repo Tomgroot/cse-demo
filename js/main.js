@@ -1,12 +1,12 @@
 document.querySelector('form').addEventListener('submit', (e) => {
     const formData = new FormData(e.target);
-    var data = {
+    var cardData = JSON.stringify({
         "cardholder": formData.get('name'),
         "cardnumber": formData.get('number'),
         "cardcvc": formData.get('cvv'),
-        "valid_thru_month": formData.get("valid_thru_month"),
-        "valid_thru_year": formData.get("valid_thru_year"),
-    };
+        "valid_thru_month": formData.get("expiryMonth"),
+        "valid_thru_year": formData.get("expiryYear"),
+    });
 
     // Because tested on local environment we use a hidden field, you can also use a http request to get the keys
     // const xhttp = new XMLHttpRequest();
@@ -24,7 +24,7 @@ document.querySelector('form').addEventListener('submit', (e) => {
     encrypt.setPublicKey(public_key);
     var cse = {
         "identifier": keys.identifier,
-        "data": encrypt.encrypt(data)
+        "data": encrypt.encrypt(cardData)
     }
 
     //Submit only the encrypted card data
