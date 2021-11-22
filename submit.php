@@ -6,7 +6,12 @@ require_once('config.php');
 use Omnipay\Omnipay;
 
 //If form is submitted we authorize the payment via CSE
-if (isset($_GET['submit']) && isset($_POST['name'])) {
+if (!isset($_POST['cse']))
+    exit;
+//CSE only contains the encrypted CSE data
+$cse = json_decode($_POST['cse']);
+if (!$cse)
+    exit;
 
 $gateway = Omnipay::create('Paynl');
 
@@ -15,21 +20,11 @@ $gateway->setTokenCode(TOKENCODE);
 $gateway->setServiceId(SERVICEID);
 
 $data = ['amount' => 1, 'clientIp' => '84.247.45.3', 'returnUrl' => 'localhost'];
-
 $authorize = $gateway->authorize($data);
-$card = new \Omnipay\Common\CreditCard([
-'name' => $_POST['name']
-]);
-
-var_dump($_POST['cse']);
-exit;
-
-$authorize->setCse($_POST['cse']);
+$authorize->setCse($cse);
 $authorize->setTestMode(true);
 $authorizeResponse = $authorize->send();
-}
-
-if (isset($_GET['submit']) && isset($_POST['name'])) { ?>
+?>
     <div class="mt-3 alert alert-<?= $authorizeResponse->isSuccessful() ? 'success' : 'danger'; ?>" role="alert">
         <?= $authorizeResponse->getMessage(); ?>
     </div>
@@ -37,6 +32,5 @@ if (isset($_GET['submit']) && isset($_POST['name'])) { ?>
         <label class="form-label">Response:</label>
         <textarea class="form-control" style="width: 600px; height: 300px;">
             <?php var_dump($authorizeResponse->getData()); ?>
-            </textarea>
+        </textarea>
     </div>
-<?php } ?>

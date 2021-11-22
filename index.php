@@ -69,11 +69,11 @@
         $json = file_get_contents('https://payment.pay.nl/v1/Payment/getEncryptionKeys/json');
         $keys = json_decode($json);
         $key = json_encode([
-            "identifier" => $keys->keys[0]['identifier'],
-            "public_key" => $keys->keys[0]['public_key']
+            "identifier" => $keys->keys[0]->identifier,
+            "public_key" => $keys->keys[0]->public_key
         ])
         ?>
-        <input type="hidden" value="<?= $key; ?>" name="keys">
+        <input type="hidden" value='<?= $key; ?>' name="keys">
         <div class="col-sm-4">
             <div class="form-group">
                 <label for="cvv">CVV/CVC</label>
@@ -83,9 +83,12 @@
     </div>
         <input class="btn btn-primary mt-3" type="submit">
     </form>
+
+    <div id="return"></div>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-<script src="main.js"></script>
+<script src="js/jsencrypt.min.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
