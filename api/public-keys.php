@@ -1,8 +1,8 @@
 <?php
 use Omnipay\Omnipay;
 
-require_once('vendor/autoload.php');
-require_once('config.php');
+require_once('../vendor/autoload.php');
+require_once('../config.php');
 
 $gateway = Omnipay::create('Paynl');
 $encryption = $gateway->fetchEncryptionKeys();

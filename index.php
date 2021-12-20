@@ -13,92 +13,129 @@ try {
     die ('<h1>Unexpected error</h1><p>' . $exception->getMessage() . '</p>');
 }
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <title>CSE demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit of debit kaartbetaling</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/cryptography-demo.css">
     <script>
         var keyUrl = 'public-keys.php';
         var keyPairs = '<?php echo json_encode($publicEncryptionKeys); ?>';
     </script>
 </head>
 <body>
-<div class="container pt-5">
+<main class="rounded-box">
+    <header>
 
-    <h1>CSE Demo</h1>
-    <form action="?submit" method="post" id="cseform">
-    <div class="row">
-        <div class="col-sm-12">
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input class="form-control" id="name" type="text" name="name" value="T.W. Groot" placeholder="Enter your name">
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-sm-12">
-            <div class="form-group">
-                <label for="ccnumber">Credit Card Number</label>
-                <div class="input-group">
-                    <input class="form-control" type="text" name="number" value="4111 1111 1111 1111" placeholder="0000 0000 0000 0000" autocomplete="email">
+    </header>
+    <aside>
+        <h2>Bestelgegevens</h2>
+        <dl>
+            <dt>Bedrag</dt>
+            <dd>€ 0,01</dd>
+            <dt>Begunstigde</dt>
+            <dd>Classic Carparts</dd>
+            <dt>Verloopt op</dt>
+            <dd>19-02-2021 15:23</dd>
+        </dl>
+    </aside>
+
+    <form action="api/process.php" method="post" data-pay-encrypt-form>
+        <fieldset>
+            <legend>Betaalgegevens</legend>
+            <label for="card-holder">Kaarthouder</label>
+            <input id="card-holder" type="text" placeholder="Naam van de kaarthouder" name="cardholder" value="" required data-pay-encrypt-field />
+        </fieldset>
+
+        <fieldset>
+            <div class="row-pan-cvc-group">
+                <div class="column-pan">
+                    <div class="form-element-container has-icon-container">
+                        <label for="cardnumber">Kaartnummer</label>
+                        <div class="has-icon-wrap">
+                            <span class="input-container">
+                                <input id="cardnumber" type="text" name="cardnumber" placeholder="Het nummer van uw credit- of debitkaart" value="" required data-pay-encrypt-field />
+                            </span>
+
+                            <div class="icon-container">
+                                <img src="img/creditcard/cc-front.svg" data-credit-card-type alt="Card type" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="column-cvc">
+                    <div class="form-element-container">
+                        <label for="cvc" data-cvc-label>CVC</label>
+                        <span class="input-container">
+                            <input id="cvc" type="text" name="cardcvc" placeholder="123" required value=""  data-pay-encrypt-field />
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="form-group col-sm-4">
-            <label for="ccmonth">Expiry month</label>
-            <select class="form-control" id="ccmonth" name="expiryMonth">
-                <option value="01">1</option>
-                <option value="02">2</option>
-                <option selected value="03">3</option>
-                <option value="04">4</option>
-                <option value="05">5</option>
-                <option value="06">6</option>
-                <option value="07">7</option>
-                <option value="08">8</option>
-                <option value="09">9</option>
-                <option>10</option>
-                <option>11</option>
-                <option>12</option>
-            </select>
-        </div>
-        <div class="form-group col-sm-4">
-            <label for="ccyear">Expiry year</label>
-            <select class="form-control" id="ccyear" name="expiryYear">
-                <option>2014</option>
-                <option>2015</option>
-                <option>2016</option>
-                <option>2017</option>
-                <option>2018</option>
-                <option>2019</option>
-                <option>2020</option>
-                <option>2021</option>
-                <option>2022</option>
-                <option selected>2023</option>
-                <option>2024</option>
-                <option>2025</option>
-            </select>
-        </div>
-        <input type="hidden" value='<?= $key; ?>' name="keys">
-        <div class="col-sm-4">
-            <div class="form-group">
-                <label for="cvv">CVV/CVC</label>
-                <input class="form-control" id="cvv" type="text" name="cvv" value="123" placeholder="123">
-            </div>
-        </div>
-    </div>
-        <input class="btn btn-primary mt-3" type="submit">
-    </form>
 
-    <div id="return"></div>
-</div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-<script src="js/jsencrypt.min.js"></script>
-<script src="js/main.js"></script>
+            <div class="row-expiry-group">
+                <div class="column-month">
+                    <div class="form-element-container">
+                        <label for="month">Geldig tot maand</label>
+                        <select name="valid_thru_month" id="month" data-pay-encrypt-field>
+                            <option value="" disabled selected>Kies</option>
+                            <option value="01">01 - Januari</option>
+                            <option value="02">02 - Februari</option>
+                            <option value="03">03 - Maart</option>
+                            <option value="04">04 - April</option>
+                            <option value="05">05 - Mei</option>
+                            <option value="06">06 - Juni</option>
+                            <option value="07">07 - Juli</option>
+                            <option value="08">08 - Augustus</option>
+                            <option value="09">09 - September</option>
+                            <option value="10">10 - Oktober</option>
+                            <option value="11">11 - November</option>
+                            <option value="12">12 - December</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="column-year">
+                    <div class="form-element-container">
+                        <label for="year">Jaar</label>
+                        <select name="valid_thru_year" id="year"  data-pay-encrypt-field>
+                            <option value="" disabled selected>Kies</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-element-container">
+                <button type="submit" data-loading-state="0" disabled="disabled">
+                    <span class="state-not-loading">Doorgaan</span>
+                    <span class="state-loading">
+                        <img src="img/spinner.gif" width="30" height="30" alt="Loading" />
+                    </span>
+                </button>
+            </div>
+        </fieldset>
+    </form>
+</main>
+
+<script type="module">
+    import MyForm from './js/merchant.js';
+
+    window.addEventListener("DOMContentLoaded", () => {
+        let form = new MyForm;
+        form.init();
+    });
+</script>
+<div id="payment-modal" class="modal micromodal-slide" aria-hidden="true"></div>
 </body>
 </html>

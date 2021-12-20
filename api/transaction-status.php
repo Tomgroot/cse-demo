@@ -1,7 +1,8 @@
 <?php
+require_once('../vendor/autoload.php');
+require_once('../config.php');
 
-require_once('vendor/autoload.php');
-require_once('config.php');
+use Omnipay\Omnipay;
 
 try {
     if (!isset($_GET['transaction_id'])) {
@@ -9,12 +10,17 @@ try {
     }
 
     $gateway = Omnipay::create('Paynl');
-    $fetch_transaction = $gateway->fetchTransaction();
-    $fetch_transaction->setTransactionId(filter_var($_GET['transaction_id'], FILTER_SANITIZE_STRING));
-    $result = $fetch_transaction->send();
+    $gateway->setApiToken(APITOKEN);
+    $gateway->setTokenCode(TOKENCODE);
+    $gateway->setServiceId(SERVICEID);
+    $fetch_authentication = $gateway->fetchAuthenticationStatus();
+    $fetch_authentication->setTransactionId(filter_var($_GET['transaction_id'], FILTER_SANITIZE_STRING));
+    $result = $fetch_authentication->send();
+    $response = $result->getThreeDS();
+    $response['result'] = $result->isSuccessful() ? "1" : "0";
 } catch (Exception $e) {
-    $result = array('result' => '0', 'errorMessage' => $e->getMessage());
+    $response = array('result' => '0', 'errorMessage' => $e->getMessage());
 }
 
 header('content-type: application/json');
-echo json_encode($result->getStatus());
+echo json_encode($response);

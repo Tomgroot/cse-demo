@@ -1,7 +1,7 @@
 <?php
 
-require_once('vendor/autoload.php');
-require_once('config.php');
+require_once('../vendor/autoload.php');
+require_once('../config.php');
 
 use Omnipay\Omnipay;
 use Omnipay\Paynl\Message\Request\AuthenticateRequest;
@@ -41,12 +41,24 @@ try {
 
     $authenticate->setTestMode(true);
     $result = $authenticate->send();
+
+    //Mimic the response of the demo
+    $response = $result->getThreeDS();
+    $response['result'] = $result->isSuccessful() ? "1" : "0";
+    $transaction = $result->getTransaction();
+    $response['entranceCode'] = $transaction['entranceCode'] ?? "";
+    $response['orderId'] = $transaction['orderId'] ?? "";
+    $response['transaction'] = [
+        'entranceCode'  => $response['entranceCode'],
+        'transactionId' => $response['orderId']
+    ];
+
 } catch (Exception $e) {
-    $result = array(
+    $response = array(
         'result' => 0,
         'errorMessage' => $e->getMessage()
     );
 }
 
 header('content-type: application/json');
-echo json_encode($result->getData());
+echo json_encode($response);

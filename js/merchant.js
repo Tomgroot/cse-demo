@@ -17,11 +17,11 @@ export default class MyForm {
             'language': 'NL',
             'refresh_url': keyUrl,
             'public_keys': JSON.parse(keyPairs),
-            'post_url': 'process.php',
-            'status_url': 'transaction-status.php?transaction_id=%transaction_id%',
-            'authentication_url': 'authenticate.php',
-            'authorization_url': 'authorize.php',
-            'payment_complete_url': 'complete.php'
+            'post_url': 'api/process.php',
+            'status_url': 'api/transaction-status.php?transaction_id=%transaction_id%',
+            'authentication_url': 'api/authenticate.php',
+            'authorization_url': 'api/authorize.php',
+            'payment_complete_url': 'api/complete.php'
         });
 
         encryptedForm.init();
