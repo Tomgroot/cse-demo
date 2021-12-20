@@ -5,9 +5,17 @@
             "url": "https://github.com/Tomgroot/omnipay-paynl"
         }
     ],
+    "config": {
+        "preferred-install": {
+            "omnipay/*": "source",
+            "paynl/omnipay-paynl": "source",
+            "*": "dist"
+        }
+    },
     "require": {
         "league/omnipay": "^3",
         "paynl/omnipay-paynl": "dev-feature/cse",
-        "omnipay/paypal": "^3.0"
+        "omnipay/paypal": "^3.0",
+        "omnipay/tests": "^4.1"
     }
 }

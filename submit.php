@@ -20,10 +20,17 @@ $gateway->setTokenCode(TOKENCODE);
 $gateway->setServiceId(SERVICEID);
 
 $data = ['amount' => 1, 'clientIp' => '84.247.45.3', 'returnUrl' => 'localhost'];
-$authorize = $gateway->authorize($data);
-$authorize->setCse($cse);
-$authorize->setTestMode(true);
-$authorizeResponse = $authorize->send();
+
+
+$authenticate = $gateway->authenticate($data);
+$authenticate->setCse($cse);
+$authenticate->setTestMode(true);
+$authorizeResponse = $authenticate->send();
+
+//$authorize = $gateway->authorize($data);
+//$authorize->setCse($cse);
+//$authorize->setTestMode(true);
+//$authorizeResponse = $authorize->send();
 ?>
     <div class="mt-3 alert alert-<?= $authorizeResponse->isSuccessful() ? 'success' : 'danger'; ?>" role="alert">
         <?= $authorizeResponse->getMessage(); ?>
@@ -33,4 +40,8 @@ $authorizeResponse = $authorize->send();
         <textarea class="form-control" style="width: 600px; height: 300px;">
             <?php var_dump($authorizeResponse->getData()); ?>
         </textarea>
+        <pre>
+            <?php echo json_encode($authorizeResponse->getData(), JSON_PRETTY_PRINT); ?>
+            <?php var_dump($cse); ?>
+        </pre>
     </div>
