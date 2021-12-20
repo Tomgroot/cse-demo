@@ -16,6 +16,9 @@ try {
     $fetch_authentication = $gateway->fetchAuthenticationStatus();
     $fetch_authentication->setTransactionId(filter_var($_GET['transaction_id'], FILTER_SANITIZE_STRING));
     $result = $fetch_authentication->send();
+    if (!$result->isSuccessful()) {
+        throw new Exception($result->getMessage());
+    }
     $response = $result->getThreeDS();
     $response['result'] = $result->isSuccessful() ? "1" : "0";
 } catch (Exception $e) {

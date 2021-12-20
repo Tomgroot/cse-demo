@@ -30,7 +30,8 @@ try {
     }
 
     if (isset($_POST['transaction_id'])) {
-        $authenticate->setTransactionId($_POST['transaction_id']);
+        $authenticate->setOrderId($_POST['transaction_id'])
+            ->setEntranceCode($_POST['entrance_code']);
     } else {
         $authenticate->setDescription('Lorem Ipsum')
             ->setCurrency('EUR');
@@ -46,22 +47,32 @@ try {
             ->setPayTdsTransactionId($_POST['threeds_transaction_id']);
     }
 
-    $authenticate->setTestMode(true);
+    $authenticate
+        ->setJavaEnabled('false')
+        ->setJavascriptEnabled('false')
+        ->setLanguage('nl-NL')
+        ->setColorDepth('24')
+        ->setScreenWidth('1920')
+        ->setScreenHeight('1080')
+        ->setTz('-120');
 
+    $authenticate->setTestMode(true);
     $result = $authenticate->send();
 
-    $response = $result->getData();
+    if (!$result->isSuccessful()) {
+        throw new Exception($result->getMessage());
+    }
 
-//    //Mimic the response of the demo
-//    $response = $result->getThreeDS();
-//    $response['result'] = $result->isSuccessful();
-//    $transaction = $result->getTransaction();
-//    $response['entranceCode'] = $transaction['entranceCode'] ?? "";
-//    $response['orderId'] = $transaction['orderId'] ?? "";
-//    $response['transaction'] = [
-//        'entranceCode'  => $response['entranceCode'],
-//        'transactionId' => $response['orderId']
-//    ];
+    //Mimic the response of the demo
+    $response = $result->getThreeDS();
+    $response['result'] = $result->isSuccessful();
+    $transaction = $result->getTransaction();
+    $response['entranceCode'] = $transaction['entranceCode'] ?? "";
+    $response['orderId'] = $transaction['orderId'] ?? "";
+    $response['transaction'] = [
+        'entranceCode'  => $response['entranceCode'],
+        'transactionId' => $response['orderId']
+    ];
 
 } catch (Exception $e) {
     $response = array(

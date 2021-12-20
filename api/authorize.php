@@ -42,12 +42,17 @@ try {
 
     $authorize->setTestMode(true);
     $result = $authorize->send();
+    if (!$result->isSuccessful()) {
+        throw new Exception($result->getMessage());
+    }
+    $response = $result->getData();
+
 } catch (Exception $e) {
-    $result = array(
+    $response = array(
         'result' => 0,
         'errorMessage' => $e->getMessage()
     );
 }
 
 header('content-type: application/json');
-echo json_encode($result->getData());
+echo json_encode($response);

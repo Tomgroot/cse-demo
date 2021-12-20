@@ -14,7 +14,7 @@
     },
     "require": {
         "league/omnipay": "^3",
-        "paynl/omnipay-paynl": "dev-feature/cse",
+        "paynl/omnipay-paynl": "v3.x-dev",
         "omnipay/paypal": "^3.0",
         "omnipay/tests": "^4.1"
     }

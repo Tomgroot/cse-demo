@@ -38,9 +38,22 @@ try {
         'data'          => $payload['data']
     ];
     $authenticate->setCse($cse);
-
     $authenticate->setTestMode(true);
+
+    $authenticate
+        ->setJavaEnabled('false')
+        ->setJavascriptEnabled('false')
+        ->setLanguage('nl-NL')
+        ->setColorDepth('24')
+        ->setScreenWidth('1920')
+        ->setScreenHeight('1080')
+        ->setTz('-120');
+
     $result = $authenticate->send();
+
+    if (!$result->isSuccessful()) {
+        throw new Exception($result->getMessage());
+    }
 
     //Mimic the response of the demo
     $response = $result->getThreeDS();

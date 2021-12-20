@@ -2,6 +2,6 @@
 define('APITOKEN', '');
 define('TOKENCODE', '');
 define('SERVICEID', '');
-define('AMOUNT', '1');
+define('AMOUNT', '0.01');
 define('CLIENT_IP', '127.0.0.1');
 define('RETURN_URL', 'localhost');
