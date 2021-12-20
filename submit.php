@@ -1,4 +1,6 @@
 <?php
+//This file handles submition and uses the omnipay paynl package to authenticate and authorize a CSE payment
+
 # require autoloader
 require_once('vendor/autoload.php');
 require_once('config.php');
@@ -27,10 +29,18 @@ $authenticate->setCse($cse);
 $authenticate->setTestMode(true);
 $authorizeResponse = $authenticate->send();
 
-//$authorize = $gateway->authorize($data);
-//$authorize->setCse($cse);
-//$authorize->setTestMode(true);
-//$authorizeResponse = $authorize->send();
+// 3D Secure
+if ($authorizeResponse->getNextAction() == "tdsMethod") { ?>
+<form method="POST" action="<?= $authorizeResponse->getThreeDSMethodUrl() ?>">
+    <input name="threeDSMethodData" value="<?= $authorizeResponse->getThreeDsMethodData() ?>" />
+    <script type="text/javascript">(function(){ document.querySelector("form").submit() })();</script>
+</form>
+<?php
+} else {
+$authorize = $gateway->authorize($data);
+$authorize->setCse($cse);
+$authorize->setTestMode(true);
+$authorizeResponse = $authorize->send();
 ?>
     <div class="mt-3 alert alert-<?= $authorizeResponse->isSuccessful() ? 'success' : 'danger'; ?>" role="alert">
         <?= $authorizeResponse->getMessage(); ?>
@@ -45,3 +55,4 @@ $authorizeResponse = $authenticate->send();
             <?php var_dump($cse); ?>
         </pre>
     </div>
+<?php } ?>

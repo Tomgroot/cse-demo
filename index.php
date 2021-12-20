@@ -1,3 +1,18 @@
+<?php
+use Omnipay\Omnipay;
+
+require_once('vendor/autoload.php');
+require_once('config.php');
+
+try {
+    $gateway = Omnipay::create('Paynl');
+    $encryption = $gateway->fetchEncryptionKeys();
+    $result = $encryption->send();
+    $publicEncryptionKeys = $result->getKeys();
+} catch (Exception $exception) {
+    die ('<h1>Unexpected error</h1><p>' . $exception->getMessage() . '</p>');
+}
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,6 +20,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
     <title>CSE demo</title>
+    <script>
+        var keyUrl = 'public-keys.php';
+        var keyPairs = '<?php echo json_encode($publicEncryptionKeys); ?>';
+    </script>
 </head>
 <body>
 <div class="container pt-5">
@@ -64,15 +83,6 @@
                 <option>2025</option>
             </select>
         </div>
-        <?php
-        //Not very clean, but acts as an example. Hidden input field can for example be replaced by httpd request in the js file
-        $json = file_get_contents('https://payment.pay.nl/v1/Payment/getEncryptionKeys/json');
-        $keys = json_decode($json);
-        $key = json_encode([
-            "identifier" => $keys->keys[0]->identifier,
-            "public_key" => $keys->keys[0]->public_key
-        ])
-        ?>
         <input type="hidden" value='<?= $key; ?>' name="keys">
         <div class="col-sm-4">
             <div class="form-group">
