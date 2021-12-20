@@ -1,9 +1,10 @@
 <?php
 
-use Paynl\Payment;
-use Paynl\Api\Payment\Model;
+require_once('vendor/autoload.php');
+require_once('config.php');
 
-require_once '../config.php';
+use Omnipay\Omnipay;
+use Omnipay\Paynl\Message\Request\AuthorizeRequest;
 
 try {
     if (!isset($_POST['pay_encrypted_data'])) {
@@ -16,29 +17,31 @@ try {
         throw new Exception('Invalid json');
     }
 
-    $transaction = new Model\Authorize\Transaction();
-    $transaction
-        ->setOrderId($_POST['transaction_id'])
-        ->setEntranceCode($_POST['entrance_code']);
+    $gateway = Omnipay::create('Paynl');
+    $gateway->setApiToken(APITOKEN);
+    $gateway->setTokenCode(TOKENCODE);
+    $gateway->setServiceId(SERVICEID);
 
-    $cse = new Model\CSE();
-    $cse
-        ->setIdentifier($payload['identifier'])
-        ->setData($payload['data']);
+    $data = ['amount' => AMOUNT, 'clientIp' => CLIENT_IP, 'returnUrl' => RETURN_URL];
+    $authorize = $gateway->authorize($data);
 
-    $auth = new Model\Auth();
-    $auth
-        ->setPayTdsAcquirerId($_POST['acquirer_id'])
+    if (!$authorize instanceof AuthorizeRequest){
+        throw new Exception('Authorization not initiated');
+    }
+
+    $authorize->setTransactionId($_POST['transaction_id']);
+
+    $cse = [
+        'identifier'    => $payload['identifier'],
+        'data'          => $payload['data']
+    ];
+    $authorize->setCse($cse);
+
+    $authorize->setPayTdsAcquirerId($_POST['acquirer_id'])
         ->setPayTdsTransactionId($_POST['threeds_transaction_id']);
 
-    $payment = new Model\Payment();
-    $payment
-        ->setMethod(Model\Payment::METHOD_CSE)
-        ->setCse($cse)
-        ->setAuth($auth);
-
-    $result = Payment::authorize($transaction, $payment)->getData();
-
+    $authorize->setTestMode(true);
+    $result = $authorize->send();
 } catch (Exception $e) {
     $result = array(
         'result' => 0,
@@ -47,4 +50,4 @@ try {
 }
 
 header('content-type: application/json');
-echo json_encode($result);
+echo json_encode($result->getData());

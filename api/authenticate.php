@@ -22,10 +22,9 @@ try {
     $gateway->setTokenCode(TOKENCODE);
     $gateway->setServiceId(SERVICEID);
 
-    //TODO replace
-    $data = ['amount' => 1, 'clientIp' => '84.247.45.3', 'returnUrl' => 'localhost'];
-
+    $data = ['amount' => AMOUNT, 'clientIp' => CLIENT_IP, 'returnUrl' => RETURN_URL];
     $authenticate = $gateway->authenticate($data);
+
     if (!$authenticate instanceof AuthenticateRequest){
         throw new Exception('Authentication not initiated');
     }
@@ -33,8 +32,7 @@ try {
     if (isset($_POST['transaction_id'])) {
         $authenticate->setTransactionId($_POST['transaction_id']);
     } else {
-        $authenticate->setServiceId(SERVICEID)
-            ->setDescription('Lorem Ipsum')
+        $authenticate->setDescription('Lorem Ipsum')
             ->setCurrency('EUR');
     }
     $cse = [

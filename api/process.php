@@ -1,74 +1,46 @@
 <?php
 
-use Paynl\Payment;
-use Paynl\Api\Payment\Model;
+require_once('vendor/autoload.php');
+require_once('config.php');
 
-require_once '../config.php';
+use Omnipay\Omnipay;
+use Omnipay\Paynl\Message\Request\AuthenticateRequest;
+
 try {
-
     if (!isset($_POST['pay_encrypted_data'])) {
-        throw new RuntimeException('Missing payload data');
+        throw new Exception('Missing payload');
     }
 
     $payload = json_decode($_POST['pay_encrypted_data'], true);
 
-    $transaction = new Model\Authenticate\Transaction();
-    $transaction
-        ->setServiceId(\Paynl\Config::getServiceId())
-        ->setDescription('Lorem Ipsum')
-        ->setReference('TEST.1234')
-        ->setAmount(1)
-        ->setCurrency('EUR')
-        ->setIpAddress($_SERVER['REMOTE_ADDR'])
-        ->setLanguage('NL')
-        ->setFinishUrl(RETURN_URL);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new Exception('Invalid json');
+    }
 
-    $address = new Model\Address();
-    $address
-        ->setStreetName('Street')
-        ->setStreetNumber('10')
-        ->setStreetNumberExtension('')
-        ->setZipCode('1234AA')
-        ->setCity('Amsterdam')
-        ->setRegionCode('OV')
-        ->setCountryCode('NL');
+    $gateway = Omnipay::create('Paynl');
+    $gateway->setApiToken(APITOKEN);
+    $gateway->setTokenCode(TOKENCODE);
+    $gateway->setServiceId(SERVICEID);
 
-    $invoice = new Model\Invoice();
-    $invoice
-        ->setFirstName('Henk')
-        ->setLastName('de Vries')
-        ->setGender('M')
-        ->setAddress($address);
+    $data = ['amount' => AMOUNT, 'clientIp' => CLIENT_IP, 'returnUrl' => RETURN_URL];
+    $authenticate = $gateway->authenticate($data);
 
-    $customer = new Model\Customer();
-    $customer
-        ->setFirstName('Foo')
-        ->setLastName('Bar')
-        ->setAddress($address)
-        ->setInvoice($invoice);
+    if (!$authenticate instanceof AuthenticateRequest){
+        throw new Exception('Authentication not initiated');
+    }
 
-    $cse = new Model\CSE();
-    $cse
-        ->setIdentifier($payload['identifier'])
-        ->setData($payload['data']);
+    $authenticate->setDescription('Lorem Ipsum')
+        ->setTransactionReference('TEST.1234')
+        ->setCustomerReference('TEST.12345');
 
-    $browser = new Model\Browser();
-    $browser
-        ->setJavaEnabled('false')
-        ->setJavascriptEnabled('false')
-        ->setLanguage('nl-NL')
-        ->setColorDepth('24')
-        ->setScreenWidth('1920')
-        ->setScreenHeight('1080')
-        ->setTz('-120');
+    $cse = [
+        'identifier'    => $payload['identifier'],
+        'data'          => $payload['data']
+    ];
+    $authenticate->setCse($cse);
 
-    $result = Payment::authenticate(
-        $transaction,
-        $customer,
-        $cse,
-        $browser
-    )->getData();
-
+    $authenticate->setTestMode(true);
+    $result = $authenticate->send();
 } catch (Exception $e) {
     $result = array(
         'result' => 0,
@@ -77,4 +49,4 @@ try {
 }
 
 header('content-type: application/json');
-echo json_encode($result);
+echo json_encode($result->getData());
