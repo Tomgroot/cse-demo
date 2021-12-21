@@ -29,7 +29,12 @@ try {
         throw new Exception('Authorization not initiated');
     }
 
-    $authorize->setTransactionId($_POST['transaction_id']);
+    if (!isset($_POST['transaction_id']) || !isset($_POST['entrance_code'])) {
+        throw new Exception('Authorization not successful');
+    }
+
+    $authorize->setOrderId($_POST['transaction_id'])
+        ->setEntranceCode($_POST['entrance_code']);
 
     $cse = [
         'identifier'    => $payload['identifier'],
@@ -45,7 +50,14 @@ try {
     if (!$result->isSuccessful()) {
         throw new Exception($result->getMessage());
     }
-    $response = $result->getData();
+
+    //Mimic the response of the demo, maybe this can be in paynl omnipay
+    $transaction = $result->getTransaction();
+    $response['result'] = "1";
+    $response['orderId'] = $transaction['orderId'] ?? "";
+    $response['entranceCode'] = $transaction['entranceCode'] ?? "";
+    $response['errorMessage'] = $result->getMessage();
+    $response['errorId'] = $result->getCode();
 
 } catch (Exception $e) {
     $response = array(

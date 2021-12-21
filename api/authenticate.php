@@ -63,9 +63,9 @@ try {
         throw new Exception($result->getMessage());
     }
 
-    //Mimic the response of the demo
+    //Mimic the response of the demo, maybe this can be in paynl omnipay
     $response = $result->getThreeDS();
-    $response['result'] = $result->isSuccessful();
+    $response['result'] = "1";
     $transaction = $result->getTransaction();
     $response['entranceCode'] = $transaction['entranceCode'] ?? "";
     $response['orderId'] = $transaction['orderId'] ?? "";
