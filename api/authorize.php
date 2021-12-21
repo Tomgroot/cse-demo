@@ -52,10 +52,9 @@ try {
     }
 
     //Mimic the response of the demo, maybe this can be in paynl omnipay
-    $transaction = $result->getTransaction();
     $response['result'] = "1";
-    $response['orderId'] = $transaction['orderId'] ?? "";
-    $response['entranceCode'] = $transaction['entranceCode'] ?? "";
+    $response['orderId'] = $result->getTransactionOrderId();
+    $response['entranceCode'] = $result->getTransactionEntranceCode();
     $response['nextAction'] = $result->getNextAction();
 
 } catch (Exception $e) {

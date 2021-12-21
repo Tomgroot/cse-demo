@@ -58,12 +58,11 @@ try {
     //Mimic the response of the demo
     $response = $result->getThreeDS();
     $response['result'] = $result->isSuccessful() ? "1" : "0";
-    $transaction = $result->getTransaction();
-    $response['entranceCode'] = $transaction['entranceCode'] ?? "";
-    $response['orderId'] = $transaction['orderId'] ?? "";
+    $response['entranceCode'] = $result->getTransactionEntranceCode();
+    $response['orderId'] = $result->getTransactionOrderId();
     $response['transaction'] = [
-        'entranceCode'  => $response['entranceCode'],
-        'transactionId' => $response['orderId']
+        'entranceCode'  => $result->getTransactionEntranceCode(),
+        'transactionId' => $result->getTransactionOrderId()
     ];
 
 } catch (Exception $e) {
