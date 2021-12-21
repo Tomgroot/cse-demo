@@ -56,8 +56,7 @@ try {
     $response['result'] = "1";
     $response['orderId'] = $transaction['orderId'] ?? "";
     $response['entranceCode'] = $transaction['entranceCode'] ?? "";
-    $response['errorMessage'] = $result->getMessage();
-    $response['errorId'] = $result->getCode();
+    $response['nextAction'] = $result->getNextAction();
 
 } catch (Exception $e) {
     $response = array(
