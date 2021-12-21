@@ -55,7 +55,7 @@ try {
     $response['result'] = "1";
     $response['orderId'] = $result->getTransactionOrderId();
     $response['entranceCode'] = $result->getTransactionEntranceCode();
-    $response['nextAction'] = $result->getNextAction();
+    $response['nextAction'] = strtolower($result->getNextAction());
 
 } catch (Exception $e) {
     $response = array(
