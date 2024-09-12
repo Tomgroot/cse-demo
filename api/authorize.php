@@ -7,11 +7,9 @@ use Omnipay\Omnipay;
 use Omnipay\Paynl\Message\Request\AuthorizeRequest;
 
 try {
-    if (!isset($_POST['pay_encrypted_data'])) {
+    if (!isset($_POST['identifier']) || !isset($_POST['data'])) {
         throw new Exception('Missing payload');
     }
-
-    $payload = json_decode($_POST['pay_encrypted_data'], true);
 
     if (json_last_error() !== JSON_ERROR_NONE) {
         throw new Exception('Invalid json');
@@ -22,7 +20,7 @@ try {
     $gateway->setTokenCode(TOKENCODE);
     $gateway->setServiceId(SERVICEID);
 
-    $data = ['amount' => AMOUNT, 'clientIp' => CLIENT_IP, 'returnUrl' => RETURN_URL];
+    $data = ['amount' => AMOUNT, 'clientIp' => $_SERVER['REMOTE_ADDR'], 'returnUrl' => RETURN_URL];
     $authorize = $gateway->authorize($data);
 
     if (!$authorize instanceof AuthorizeRequest){
@@ -37,8 +35,8 @@ try {
         ->setEntranceCode($_POST['entrance_code']);
 
     $cse = [
-        'identifier'    => $payload['identifier'],
-        'data'          => $payload['data']
+        'identifier'    => $_POST['identifier'],
+        'data'          => $_POST['data']
     ];
     $authorize->setCse($cse);
 
