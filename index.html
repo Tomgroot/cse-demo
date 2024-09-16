@@ -5,12 +5,38 @@
     <title>CSE Demo</title>
     <link href="https://cdn.openticket.tech/design/v0.9.43/ot.min.css" rel="stylesheet">
     <link href="https://whitelabel-config.openticket.local/style.css" rel="stylesheet">
+    <!-- TODO: replace localhost -->
     <script src="http://localhost:9999/node_modules/jsencrypt/bin/jsencrypt.js"></script>
     <style>
-        .card-fields__number, .card-fields__expiration {
+        .card-fields__card-number {
             display: flex;
-            gap: 1rem;
         }
+
+        .card-fields__card-number__type {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding-left: 0.5rem;
+        }
+
+        .card-fields__card-number__type img {
+            height: 85%;
+        }
+
+        .card-fields__card-number__expiration, .card-fields__card-number__cvc {
+            flex: unset !important;
+            padding: 0 !important;
+        }
+
+        .card-fields__card-number__expiration {
+            width: 5rem !important;
+        }
+
+        .card-fields__card-number__cvc {
+            width: 3.5rem !important;
+        }
+
         /* TODO: replace and fix */
         .ot-document:not(.is-dark):not(.shadows) {
             background-color:white;
@@ -18,68 +44,119 @@
     </style>
 </head>
 <body class="ot-document ot-content">
-<form onsubmit="encryptAndSubmit()" data-pay-encrypt-form>
+<form onsubmit="encryptAndSubmit()">
     <div class="card-fields">
         <div class="ot-input-field">
-            <label class="ot-input-label"> Card holder name </label>
+            <label class="ot-input-label">Cardholder name</label>
             <label class="ot-input-sublabel">Name as it appears on the card</label>
             <input type="text" placeholder="" name="cardholder">
         </div>
         <div class="ot-input-field">
-            <label class="ot-input-label"> Card card number </label>
+            <label class="ot-input-label">Card number</label>
             <label class="ot-input-sublabel"></label>
-            <div class="card-fields__number">
-                <input type="text" name="cardnumber" maxlength="19" placeholder="xxxx xxxx xxxx xxxx">
-                <div class="card-fields__number__cvc">
-                    <input type="text" placeholder="CVC" maxlength="3" name="cardcvc">
+            <div class="card-fields__card-number ot-input">
+                <div class="card-fields__card-number__type">
+                    <!-- TODO: replace localhost -->
+                    <img src="http://localhost:9999/img/creditcard/cc-front.svg" id="card-type" alt="Card type" />
                 </div>
+                <input type="text" name="cardnumber" placeholder="Card number" maxlength="19">
+                <input type="text" name="valid_thru" class="card-fields__card-number__expiration" placeholder="MM / YY" maxlength="7">
+                <input type="text" maxlength="4" placeholder="CVC" name="cardcvc" class="card-fields__card-number__cvc">
             </div>
         </div>
-        <div class="ot-input-field">
-            <label class="ot-input-label"> Expiration date </label>
-            <label class="ot-input-sublabel"></label>
-            <div class="card-fields__expiration">
-                <select name="valid_thru_month" class="ot-select">
-                    <option value="" disabled selected></option>
-                    <option value="01">01 - Januari</option>
-                    <option value="02">02 - Februari</option>
-                    <option value="03">03 - Maart</option>
-                    <option value="04">04 - April</option>
-                    <option value="05">05 - Mei</option>
-                    <option value="06">06 - Juni</option>
-                    <option value="07">07 - Juli</option>
-                    <option value="08">08 - Augustus</option>
-                    <option value="09">09 - September</option>
-                    <option value="10">10 - Oktober</option>
-                    <option value="11">11 - November</option>
-                    <option value="12">12 - December</option>
-                </select>
-                <select name="valid_thru_year" class="ot-select">
-                    <option value="" disabled selected></option>
-                    <option value="2021">2021</option>
-                    <option value="2022">2022</option>
-                    <option value="2023">2023</option>
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                    <option value="2027">2027</option>
-                    <option value="2028">2028</option>
-                    <option value="2029">2029</option>
-                </select>
-            </div>
-        </div>
-        <button class="ot-button is-fullwidth is-small" type="submit"> Submit <i class="oti oti-carrot-right is-small"></i></button>
     </div>
 </form>
 
 <script type="text/javascript">
     const jsEncrypt = new JSEncrypt();
 
-    // Add spaces to card number for readability
+    let currentCardType = 'general';
+
     document.querySelector('input[name="cardnumber"]').addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ');
-        e.target.value = value.trim();
+        const cardNumber = document.querySelector('[name="cardnumber"]').value.replace(/\D/g, '');
+        const cardInfo = CreditCardInfo.getInfo(cardNumber);
+
+        let whitespacedNumber = '';
+        let blockStart = 0;
+        for (const blockLength of cardInfo.blocks) {
+            whitespacedNumber += cardNumber.substring(blockStart, blockStart + blockLength) + ' ';
+            blockStart += blockLength;
+        }
+
+        e.target.value = whitespacedNumber.trim();
+
+        const numbers = whitespacedNumber.replace(/\D/g, '');
+        if (numbers.length === blockStart){
+            document.querySelector('input[name="valid_thru"]').focus();
+        }
+
+        // TODO: implement current card type in the card info object such that we keep a centralized 'currently selected' there
+        currentCardType = cardInfo.type in CreditCardInfo.images ? cardInfo.type : 'general';
+
+        // TODO: replace localhost and check injected url
+        document.getElementById('card-type').src = `http://localhost:9999/${CreditCardInfo.images[currentCardType]}`;
+
+        document.querySelector('input[name="cardcvc"]').setAttribute('maxlength', CreditCardInfo.codes[currentCardType].size);
+        document.querySelector('input[name="cardcvc"]').setAttribute('placeholder', CreditCardInfo.codes[currentCardType].name);
     });
+
+    document.querySelector('input[name="valid_thru"]').addEventListener('input', function(e) {
+        const value = document.querySelector('[name="valid_thru"]').value;
+        e.target.value = parseExpiration(value);
+
+        if (value.replace(/\D/g, '').length === 4){
+            document.querySelector('input[name="cardcvc"]').focus();
+        }
+    });
+
+    document.querySelector('input[name="cardcvc"]').addEventListener('input', function(e) {
+        e.target.value = document.querySelector('[name="cardcvc"]').value.replace(/\D/g, '');
+    });
+
+    document.querySelector('input[name="valid_thru"]').addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && e.target.value === '') {
+            document.querySelector('[name="cardnumber"]').focus();
+        }
+    });
+
+    document.querySelector('input[name="cardcvc"]').addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && e.target.value === '') {
+            document.querySelector('[name="valid_thru"]').focus();
+        }
+    });
+
+    function submitWhenFullyFilled() {
+        const cardnumber = document.querySelector('[name="cardnumber"]').value.replace(/\D/g, '');
+        const valid_thru = document.querySelector('[name="valid_thru"]').value.replace(/\D/g, '');
+        const cardcvc = document.querySelector('[name="cardcvc"]').value.replace(/\D/g, '');
+
+        
+        if (cardnumber.length === CreditCardInfo.blocks && valid_thru.length === 4 && cardcvc.length === 3) {
+            encryptAndSubmit();
+        }
+    }
+
+    function parseExpiration(value) {
+        const numbers = value.replace(/\D/g, '');
+
+        if (numbers.length === 1 && value.includes('/')) {
+            return '0' + numbers + ' / ';
+        }
+
+        if (value.length === 4) {
+            return numbers;
+        }
+
+        if (numbers.length === 2) {
+            return numbers + ' / ';
+        }
+
+        if (numbers.length > 2) {
+            return numbers.substring(0, 2) + ' / ' + numbers.substring(2);
+        }
+
+        return numbers;
+    }
 
     window.addEventListener('message', (csePublicKey) => {
         console.log('Data received localhost:', csePublicKey, csePublicKey.data);
@@ -113,6 +190,132 @@
 
         window.parent.postMessage({encrypted}, '*');
     }
+
+    const CreditCardInfo = {
+        blocks: {
+            uatp:          [4, 5, 6],
+            amex:          [4, 6, 5],
+            diners:        [4, 6, 4],
+            discover:      [4, 4, 4, 4],
+            mastercard:    [4, 4, 4, 4],
+            dankort:       [4, 4, 4, 4],
+            instapayment:  [4, 4, 4, 4],
+            jcb15:         [4, 6, 5],
+            jcb:           [4, 4, 4, 4],
+            maestro:       [4, 4, 4, 4],
+            visa:          [4, 4, 4, 4],
+            mir:           [4, 4, 4, 4],
+            unionPay:      [4, 4, 4, 4],
+            general:       [4, 4, 4, 4]
+        },
+
+        codes: {
+            uatp: { name: "CVV", size: 3 },
+            amex: { name: "CID", size: 4 },
+            diners: { name: "CVV", size: 3 },
+            discover: { name: "CID", size: 3 },
+            mastercard: { name: "CVC", size: 3 },
+            dankort: { name: "CVV", size: 3 },
+            instapayment: { name: "CVV", size: 3 },
+            jcb15: { name: "CVV", size: 3 },
+            jcb: { name: "CVV", size: 3 },
+            maestro: { name: "CVC", size: 3 },
+            visa: { name: "CVV", size: 3 },
+            mir: { name: "CVP2", size: 3 },
+            unionPay: { name: "CVN", size: 3 },
+            general: { name: "CVV", size: 3 }
+        },
+
+        images: {
+            uatp: 'img/creditcard/cc-front.svg',
+            amex: 'img/creditcard/cc-amex.svg',
+            diners: 'img/creditcard/cc-diners-club.svg',
+            discover: 'img/creditcard/cc-discover.svg',
+            mastercard: 'img/creditcard/cc-mastercard.svg',
+            jcb15: 'img/creditcard/cc-jcb.svg',
+            jcb: 'img/creditcard/cc-jcb.svg',
+            maestro: 'img/creditcard/cc-maestro.svg',
+            visa: 'img/creditcard/cc-visa.svg',
+            mir: 'img/creditcard/cc-mir.svg',
+            unionPay: 'img/creditcard/cc-unionpay.svg',
+            general: 'img/creditcard/cc-front.svg'
+        },
+
+        re: {
+            // starts with 1; 15 digits, not starts with 1800 (jcb card)
+            uatp: /^(?!1800)1\d{0,14}/,
+
+            // starts with 34/37; 15 digits
+            amex: /^3[47]\d{0,13}/,
+
+            // starts with 6011/65/644-649; 16 digits
+            discover: /^(?:6011|65\d{0,2}|64[4-9]\d?)\d{0,12}/,
+
+            // starts with 300-305/309 or 36/38/39; 14 digits
+            diners: /^3(?:0([0-5]|9)|[689]\d?)\d{0,11}/,
+
+            // starts with 51-55/2221–2720; 16 digits
+            mastercard: /^(5[1-5]\d{0,2}|22[2-9]\d{0,1}|2[3-7]\d{0,2})\d{0,12}/,
+
+            // starts with 5019/4175/4571; 16 digits
+            dankort: /^(5019|4175|4571)\d{0,12}/,
+
+            // starts with 637-639; 16 digits
+            instapayment: /^63[7-9]\d{0,13}/,
+
+            // starts with 2131/1800; 15 digits
+            jcb15: /^(?:2131|1800)\d{0,11}/,
+
+            // starts with 2131/1800/35; 16 digits
+            jcb: /^(?:35\d{0,2})\d{0,12}/,
+
+            // starts with 50/56-58/6304/67; 16 digits
+            maestro: /^(?:5[0678]\d{0,2}|6304|67\d{0,2})\d{0,12}/,
+
+            // starts with 22; 16 digits
+            mir: /^220[0-4]\d{0,12}/,
+
+            // starts with 4; 16 digits
+            visa: /^4\d{0,15}/,
+
+            // starts with 62/81; 16 digits
+            unionPay: /^(62|81)\d{0,14}/
+        },
+
+        getStrictBlocks: function (block) {
+            var total = block.reduce(function (prev, current) {
+                return prev + current;
+            }, 0);
+
+            return block.concat(19 - total);
+        },
+
+        getInfo: function (value, strictMode) {
+            var blocks = CreditCardInfo.blocks,
+                re = CreditCardInfo.re;
+
+            // Some credit card can have up to 19 digits number.
+            // Set strictMode to true will remove the 16 max-length restrain,
+            // however, I never found any website validate card number like
+            // this, hence probably you don't want to enable this option.
+            strictMode = !!strictMode;
+
+            for (var key in re) {
+                if (re[key].test(value)) {
+                    var matchedBlocks = blocks[key];
+                    return {
+                        type: key,
+                        blocks: strictMode ? this.getStrictBlocks(matchedBlocks) : matchedBlocks
+                    };
+                }
+            }
+
+            return {
+                type: 'unknown',
+                blocks: strictMode ? this.getStrictBlocks(blocks.general) : blocks.general
+            };
+        }
+    };
 </script>
 
 </body>
