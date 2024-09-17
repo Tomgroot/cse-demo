@@ -1,6 +1,0 @@
-<?php
-define('APITOKEN', 'token');
-define('TOKENCODE', 'AT-...');
-define('SERVICEID', 'SL-...');
-define('AMOUNT', '0.01');
-define('RETURN_URL', 'localhost');
