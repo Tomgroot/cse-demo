@@ -95,8 +95,9 @@
         getCurrentCardType,
         cardTypes,
         parseExpirationInputString,
-        setPublicKey,
-        submitWhenCardDetailsAreFilledIn
+        messageIdentifier,
+        submitWhenCardDetailsAreFilledIn,
+        setOnMessageCallback,
     } = useCardInfo();
 
     document.querySelector('input[name="cardnumber"]').addEventListener('input', function(e) {
@@ -129,6 +130,10 @@
         submitWhenFullyFilled();
     });
 
+    document.querySelector('input[name="cardholder"]').addEventListener('change', function() {
+        submitWhenFullyFilled();
+    });
+
     document.querySelector('input[name="valid_thru"]').addEventListener('keydown', function(e) {
         if (e.key === 'Backspace' && e.target.value === '') {
             document.querySelector('[name="cardnumber"]').focus();
@@ -153,14 +158,7 @@
         );
     }
 
-    window.addEventListener('message', (message) => {
-        console.log("Message from shop: ", message);
-
-        if (message.data && 'publicKey' in message.data && message.data.publicKey.length > 0) {
-            setPublicKey(message.data.publicKey);
-            return;
-        }
-
+    setOnMessageCallback((message) => {
         if (message.data && message.data.error) {
             document.querySelector('.card-fields__card-number__input.ot-input').setAttribute('invalid', 'true');
             return;
@@ -169,7 +167,7 @@
         if (message.data && message.data.success) {
             document.querySelector('.card-fields__card-number__input.ot-input').setAttribute('success', 'true');
         }
-    });
+    })
 </script>
 
 </body>

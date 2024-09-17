@@ -2,7 +2,6 @@ export const useCardInfo = () => {
     const jsEncrypt = new JSEncrypt();
     let currentCardType = 'general';
     const scrollHeight = document.documentElement.scrollHeight;
-    window.parent.postMessage({scrollHeight}, '*');
 
     const cardTypes = {
         uatp: {
@@ -187,7 +186,7 @@ export const useCardInfo = () => {
 
         const encrypted = jsEncrypt.encrypt(JSON.stringify(dataToEncrypt));
 
-        window.parent.postMessage({encrypted}, '*');
+        sendTillReceived('encrypted', {encrypted});
     }
 
     function submitWhenCardDetailsAreFilledIn(cardHolder, cardNumber, validThru, cardCvc) {
@@ -210,13 +209,74 @@ export const useCardInfo = () => {
         }
     }
 
+    const messageIdentifier = '_isOpenticketCse';
+    let sendInterval = undefined;
+    let intervalAction = undefined;
+
+    const sendMessage = (data) => {
+        window.parent.postMessage({
+            [messageIdentifier]: true,
+            scope: 'client',
+            ...data,
+        }, '*');
+    }
+
+
+    // The iframe is the client, so it initializes the communication.
+    sendMessage({init: 'SYN'});
+
+    // This is required to be run, otherwise the messages won't be received.
+    const setOnMessageCallback = (callback) => {
+        window.addEventListener('message', (message) => {
+            if (!message.data || !(messageIdentifier in message.data) || message.data[messageIdentifier] !== true) {
+                return;
+            }
+
+            if (!('scope' in message.data) || message.data.scope === 'client') {
+                return;
+            }
+
+            if (message.data && 'messageReceived' in message.data && intervalAction
+                && message.data.messageReceived === intervalAction && sendInterval) {
+                clearInterval(sendInterval);
+                sendInterval = undefined;
+                intervalAction = undefined;
+            }
+
+            if (message.data.action) {
+                sendMessage({messageReceived: message.data.action});
+            }
+
+            if (message.data && 'init' in message.data && message.data.init === 'SYN-ACK') {
+                sendMessage({init: 'ACK'});
+                sendTillReceived('scrollHeight', {scrollHeight});
+                return;
+            }
+
+            if (message.data && 'publicKey' in message.data) {
+                setPublicKey(message.data.publicKey);
+            }
+
+            callback(message);
+        });
+    }
+
+    const sendTillReceived = (action, data) => {
+        sendMessage({action, ...data});
+        intervalAction = action;
+        sendInterval = setInterval(() => {
+            sendMessage({action, ...data})
+        }, 1000);
+    }
+
     return {
+        setCurrentCardTypeBasedOnCardNumber,
+        parseCardNumberInputString,
+        getCurrentCardType,
         cardTypes,
         parseExpirationInputString,
-        parseCardNumberInputString,
+        messageIdentifier,
         submitWhenCardDetailsAreFilledIn,
-        setCurrentCardTypeBasedOnCardNumber,
-        setPublicKey,
-        getCurrentCardType
+        setOnMessageCallback,
     };
 };
