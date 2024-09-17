@@ -8,8 +8,26 @@
     <!-- TODO: replace localhost -->
     <script src="http://localhost:9999/node_modules/jsencrypt/bin/jsencrypt.js"></script>
     <style>
+        form {
+            margin-bottom: 0;
+        }
+
         .card-fields__card-number {
+            margin-bottom: 0;
+        }
+
+        .card-fields__card-number__input {
             display: flex;
+        }
+
+        .card-fields__card-number__input[success="true"] {
+            border-color: var(--ot-color-accent-green-dark) !important;
+            box-shadow: 0 0 0 1px var(--ot-color-accent-green-dark) !important;
+        }
+
+        .card-fields__card-number__input[invalid="true"] {
+            border-color: var(--ot-color-accent-orange-dark) !important;
+            box-shadow: 0 0 0 1px var(--ot-color-accent-orange-dark) !important;
         }
 
         .card-fields__card-number__type {
@@ -44,17 +62,17 @@
     </style>
 </head>
 <body class="ot-document ot-content">
-<form onsubmit="encryptAndSubmit()">
+<form>
     <div class="card-fields">
         <div class="ot-input-field">
             <label class="ot-input-label">Cardholder name</label>
             <label class="ot-input-sublabel">Name as it appears on the card</label>
             <input type="text" placeholder="" name="cardholder">
         </div>
-        <div class="ot-input-field">
+        <div class="ot-input-field card-fields__card-number">
             <label class="ot-input-label">Card number</label>
             <label class="ot-input-sublabel"></label>
-            <div class="card-fields__card-number ot-input">
+            <div class="card-fields__card-number__input ot-input">
                 <div class="card-fields__card-number__type">
                     <!-- TODO: replace localhost -->
                     <img src="http://localhost:9999/img/creditcard/cc-front.svg" id="card-type" alt="Card type" />
@@ -66,51 +84,49 @@
         </div>
     </div>
 </form>
+<!-- TODO: replace localhost -->
+<script src="http://localhost:9999/cardInfo.js" type="module"></script>
+<script type="module">
+    import { useCardInfo } from 'http://localhost:9999/cardInfo.js';
 
-<script type="text/javascript">
-    const jsEncrypt = new JSEncrypt();
-
-    let currentCardType = 'general';
+    const {
+        setCurrentCardTypeBasedOnCardNumber,
+        parseCardNumberInputString,
+        getCurrentCardType,
+        cardTypes,
+        parseExpirationInputString,
+        setPublicKey,
+        submitWhenCardDetailsAreFilledIn
+    } = useCardInfo();
 
     document.querySelector('input[name="cardnumber"]').addEventListener('input', function(e) {
-        const cardNumber = document.querySelector('[name="cardnumber"]').value.replace(/\D/g, '');
-        const cardInfo = CreditCardInfo.getInfo(cardNumber);
+        const cardNumber = document.querySelector('[name="cardnumber"]').value;
+        setCurrentCardTypeBasedOnCardNumber(cardNumber);
+        e.target.value = parseCardNumberInputString(cardNumber);
 
-        let whitespacedNumber = '';
-        let blockStart = 0;
-        for (const blockLength of cardInfo.blocks) {
-            whitespacedNumber += cardNumber.substring(blockStart, blockStart + blockLength) + ' ';
-            blockStart += blockLength;
-        }
-
-        e.target.value = whitespacedNumber.trim();
-
-        const numbers = whitespacedNumber.replace(/\D/g, '');
-        if (numbers.length === blockStart){
+        const cardInfo = getCurrentCardType()
+        if (cardNumber.replace(/\D/g, '').length === cardInfo.cardNumberLength){
             document.querySelector('input[name="valid_thru"]').focus();
         }
-
-        // TODO: implement current card type in the card info object such that we keep a centralized 'currently selected' there
-        currentCardType = cardInfo.type in CreditCardInfo.images ? cardInfo.type : 'general';
-
-        // TODO: replace localhost and check injected url
-        document.getElementById('card-type').src = `http://localhost:9999/${CreditCardInfo.images[currentCardType]}`;
-
-        document.querySelector('input[name="cardcvc"]').setAttribute('maxlength', CreditCardInfo.codes[currentCardType].size);
-        document.querySelector('input[name="cardcvc"]').setAttribute('placeholder', CreditCardInfo.codes[currentCardType].name);
+        document.getElementById('card-type').src = `http://localhost:9999/${cardInfo?.image ?? cardTypes.general.image}`;
+        document.querySelector('input[name="cardcvc"]').setAttribute('maxlength', cardInfo.code.size);
+        document.querySelector('input[name="cardcvc"]').setAttribute('placeholder', cardInfo.code.name);
+        submitWhenFullyFilled();
     });
 
     document.querySelector('input[name="valid_thru"]').addEventListener('input', function(e) {
         const value = document.querySelector('[name="valid_thru"]').value;
-        e.target.value = parseExpiration(value);
+        e.target.value = parseExpirationInputString(value);
 
         if (value.replace(/\D/g, '').length === 4){
             document.querySelector('input[name="cardcvc"]').focus();
         }
+        submitWhenFullyFilled();
     });
 
     document.querySelector('input[name="cardcvc"]').addEventListener('input', function(e) {
         e.target.value = document.querySelector('[name="cardcvc"]').value.replace(/\D/g, '');
+        submitWhenFullyFilled();
     });
 
     document.querySelector('input[name="valid_thru"]').addEventListener('keydown', function(e) {
@@ -126,196 +142,34 @@
     });
 
     function submitWhenFullyFilled() {
-        const cardnumber = document.querySelector('[name="cardnumber"]').value.replace(/\D/g, '');
-        const valid_thru = document.querySelector('[name="valid_thru"]').value.replace(/\D/g, '');
-        const cardcvc = document.querySelector('[name="cardcvc"]').value.replace(/\D/g, '');
+        document.querySelector('.card-fields__card-number__input.ot-input').removeAttribute('invalid');
+        document.querySelector('.card-fields__card-number__input.ot-input').removeAttribute('success');
 
-        
-        if (cardnumber.length === CreditCardInfo.blocks && valid_thru.length === 4 && cardcvc.length === 3) {
-            encryptAndSubmit();
-        }
+        submitWhenCardDetailsAreFilledIn(
+            document.querySelector('[name="cardholder"]').value,
+            document.querySelector('[name="cardnumber"]').value,
+            document.querySelector('[name="valid_thru"]').value,
+            document.querySelector('[name="cardcvc"]').value,
+        );
     }
 
-    function parseExpiration(value) {
-        const numbers = value.replace(/\D/g, '');
+    window.addEventListener('message', (message) => {
+        console.log("Message from shop: ", message);
 
-        if (numbers.length === 1 && value.includes('/')) {
-            return '0' + numbers + ' / ';
-        }
-
-        if (value.length === 4) {
-            return numbers;
-        }
-
-        if (numbers.length === 2) {
-            return numbers + ' / ';
-        }
-
-        if (numbers.length > 2) {
-            return numbers.substring(0, 2) + ' / ' + numbers.substring(2);
-        }
-
-        return numbers;
-    }
-
-    window.addEventListener('message', (csePublicKey) => {
-        console.log('Data received localhost:', csePublicKey, csePublicKey.data);
-
-        if (!csePublicKey.data || !('public_key' in csePublicKey.data) || csePublicKey.data.public_key.length === 0) {
+        if (message.data && 'publicKey' in message.data && message.data.publicKey.length > 0) {
+            setPublicKey(message.data.publicKey);
             return;
         }
 
-        jsEncrypt.setPublicKey(atob(csePublicKey.data.public_key));
-    });
-
-    function encryptAndSubmit() {
-        event.preventDefault();
-
-        const dataToEncrypt = {
-            browserJavaEnabled: navigator.javaEnabled(),
-            browserJavascriptEnabled: true,
-            browserLanguage: navigator.language,
-            browserColorDepth: screen.colorDepth,
-            browserScreenWidth: screen.width,
-            browserScreenHeight: screen.height,
-            browserTZ: new Date().getTimezoneOffset(),
-            cardholder: document.querySelector('[name="cardholder"]').value,
-            cardnumber: document.querySelector('[name="cardnumber"]').value,
-            cardcvc: document.querySelector('[name="cardcvc"]').value,
-            valid_thru_month: document.querySelector('[name="valid_thru_month"]').value,
-            valid_thru_year: document.querySelector('[name="valid_thru_year"]').value,
-        };
-
-        const encrypted = jsEncrypt.encrypt(JSON.stringify(dataToEncrypt));
-
-        window.parent.postMessage({encrypted}, '*');
-    }
-
-    const CreditCardInfo = {
-        blocks: {
-            uatp:          [4, 5, 6],
-            amex:          [4, 6, 5],
-            diners:        [4, 6, 4],
-            discover:      [4, 4, 4, 4],
-            mastercard:    [4, 4, 4, 4],
-            dankort:       [4, 4, 4, 4],
-            instapayment:  [4, 4, 4, 4],
-            jcb15:         [4, 6, 5],
-            jcb:           [4, 4, 4, 4],
-            maestro:       [4, 4, 4, 4],
-            visa:          [4, 4, 4, 4],
-            mir:           [4, 4, 4, 4],
-            unionPay:      [4, 4, 4, 4],
-            general:       [4, 4, 4, 4]
-        },
-
-        codes: {
-            uatp: { name: "CVV", size: 3 },
-            amex: { name: "CID", size: 4 },
-            diners: { name: "CVV", size: 3 },
-            discover: { name: "CID", size: 3 },
-            mastercard: { name: "CVC", size: 3 },
-            dankort: { name: "CVV", size: 3 },
-            instapayment: { name: "CVV", size: 3 },
-            jcb15: { name: "CVV", size: 3 },
-            jcb: { name: "CVV", size: 3 },
-            maestro: { name: "CVC", size: 3 },
-            visa: { name: "CVV", size: 3 },
-            mir: { name: "CVP2", size: 3 },
-            unionPay: { name: "CVN", size: 3 },
-            general: { name: "CVV", size: 3 }
-        },
-
-        images: {
-            uatp: 'img/creditcard/cc-front.svg',
-            amex: 'img/creditcard/cc-amex.svg',
-            diners: 'img/creditcard/cc-diners-club.svg',
-            discover: 'img/creditcard/cc-discover.svg',
-            mastercard: 'img/creditcard/cc-mastercard.svg',
-            jcb15: 'img/creditcard/cc-jcb.svg',
-            jcb: 'img/creditcard/cc-jcb.svg',
-            maestro: 'img/creditcard/cc-maestro.svg',
-            visa: 'img/creditcard/cc-visa.svg',
-            mir: 'img/creditcard/cc-mir.svg',
-            unionPay: 'img/creditcard/cc-unionpay.svg',
-            general: 'img/creditcard/cc-front.svg'
-        },
-
-        re: {
-            // starts with 1; 15 digits, not starts with 1800 (jcb card)
-            uatp: /^(?!1800)1\d{0,14}/,
-
-            // starts with 34/37; 15 digits
-            amex: /^3[47]\d{0,13}/,
-
-            // starts with 6011/65/644-649; 16 digits
-            discover: /^(?:6011|65\d{0,2}|64[4-9]\d?)\d{0,12}/,
-
-            // starts with 300-305/309 or 36/38/39; 14 digits
-            diners: /^3(?:0([0-5]|9)|[689]\d?)\d{0,11}/,
-
-            // starts with 51-55/2221–2720; 16 digits
-            mastercard: /^(5[1-5]\d{0,2}|22[2-9]\d{0,1}|2[3-7]\d{0,2})\d{0,12}/,
-
-            // starts with 5019/4175/4571; 16 digits
-            dankort: /^(5019|4175|4571)\d{0,12}/,
-
-            // starts with 637-639; 16 digits
-            instapayment: /^63[7-9]\d{0,13}/,
-
-            // starts with 2131/1800; 15 digits
-            jcb15: /^(?:2131|1800)\d{0,11}/,
-
-            // starts with 2131/1800/35; 16 digits
-            jcb: /^(?:35\d{0,2})\d{0,12}/,
-
-            // starts with 50/56-58/6304/67; 16 digits
-            maestro: /^(?:5[0678]\d{0,2}|6304|67\d{0,2})\d{0,12}/,
-
-            // starts with 22; 16 digits
-            mir: /^220[0-4]\d{0,12}/,
-
-            // starts with 4; 16 digits
-            visa: /^4\d{0,15}/,
-
-            // starts with 62/81; 16 digits
-            unionPay: /^(62|81)\d{0,14}/
-        },
-
-        getStrictBlocks: function (block) {
-            var total = block.reduce(function (prev, current) {
-                return prev + current;
-            }, 0);
-
-            return block.concat(19 - total);
-        },
-
-        getInfo: function (value, strictMode) {
-            var blocks = CreditCardInfo.blocks,
-                re = CreditCardInfo.re;
-
-            // Some credit card can have up to 19 digits number.
-            // Set strictMode to true will remove the 16 max-length restrain,
-            // however, I never found any website validate card number like
-            // this, hence probably you don't want to enable this option.
-            strictMode = !!strictMode;
-
-            for (var key in re) {
-                if (re[key].test(value)) {
-                    var matchedBlocks = blocks[key];
-                    return {
-                        type: key,
-                        blocks: strictMode ? this.getStrictBlocks(matchedBlocks) : matchedBlocks
-                    };
-                }
-            }
-
-            return {
-                type: 'unknown',
-                blocks: strictMode ? this.getStrictBlocks(blocks.general) : blocks.general
-            };
+        if (message.data && message.data.error) {
+            document.querySelector('.card-fields__card-number__input.ot-input').setAttribute('invalid', 'true');
+            return;
         }
-    };
+
+        if (message.data && message.data.success) {
+            document.querySelector('.card-fields__card-number__input.ot-input').setAttribute('success', 'true');
+        }
+    });
 </script>
 
 </body>
